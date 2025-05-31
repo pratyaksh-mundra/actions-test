@@ -1,0 +1,38 @@
+name: Create Release on Commit
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetches all history for all tags and branches
+
+      - name: Get commit details
+        id: commit-info
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          echo "::set-output name=commit_message::$(git log -1 --pretty=%B)"
+          echo "::set-output name=timestamp::$(date +'%Y-%m-%d-%H-%M-%S')"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: release-${{ steps.commit-info.outputs.timestamp }}-${{ steps.commit-info.outputs.sha_short }}
+          release_name: Release ${{ steps.commit-info.outputs.timestamp }}
+          body: |
+            Automated release for commit: ${{ steps.commit-info.outputs.sha_short }}
+            
+            Commit message:
+            ${{ steps.commit-info.outputs.commit_message }}
+          draft: false
+          prerelease: false
